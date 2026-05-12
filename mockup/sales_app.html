@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>営業実績管理 - 日次集計</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+    background: #F7F6F2;
+    color: #1F1E1B;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  .sidebar {
+    background: #1F1E1B;
+    color: #D3D1C7;
+    padding: 16px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 16px 16px;
+    border-bottom: 1px solid #333330;
+    margin-bottom: 12px;
+  }
+  .sidebar-brand-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: #378ADD;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 600; font-size: 14px;
+  }
+  .sidebar-brand-name { font-size: 13px; font-weight: 500; color: #fff; }
+  .sidebar-brand-sub { font-size: 10px; color: #888780; }
+  .sidebar-section {
+    font-size: 10px; color: #888780;
+    padding: 12px 16px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 16px;
+    color: #D3D1C7;
+    text-decoration: none;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: #2C2C2A; }
+  .nav-item.active { background: #2C2C2A; color: #fff; border-left: 2px solid #378ADD; padding-left: 14px; }
+  .nav-item i { font-size: 16px; }
+  .nav-badge {
+    margin-left: auto;
+    background: #378ADD; color: white;
+    font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    background: #fff;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5F5E5A; }
+  .breadcrumb i { font-size: 12px; }
+  .breadcrumb .current { color: #1F1E1B; font-weight: 500; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 10px 4px 4px;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    border-radius: 16px;
+    font-size: 12px;
+  }
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #1D9E75; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 500;
+  }
+
+  .content { padding: 20px 24px 32px; }
+
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  .page-title { font-size: 22px; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.3px; }
+  .page-sub { font-size: 12px; color: #5F5E5A; }
+  .page-actions { display: flex; gap: 6px; align-items: center; }
+
+  button, select, input[type="date"], input[type="text"] {
+    border: 0.5px solid rgba(0,0,0,0.18);
+    background: #fff;
+    color: #1F1E1B;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    height: 32px;
+    transition: background 0.12s;
+  }
+  button:hover { background: #F1EFE8; }
+  button.primary { background: #1F1E1B; color: #fff; border-color: #1F1E1B; }
+  button.primary:hover { background: #444441; }
+  button.icon-only { padding: 6px 8px; }
+  input[type="text"] { cursor: text; padding: 6px 10px; }
+
+  .import-banner {
+    background: #E1F5EE;
+    border: 0.5px solid #9FE1CB;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px;
+    color: #085041;
+  }
+  .import-banner .file-icon { font-size: 18px; color: #0F6E56; }
+  .import-banner .file-name { font-weight: 500; }
+  .import-banner .file-meta { color: #0F6E56; opacity: 0.8; margin-left: auto; font-size: 11px; }
+  .import-banner button {
+    margin-left: 8px; height: 26px; padding: 3px 10px; font-size: 11px;
+    background: rgba(255,255,255,0.6); border-color: #9FE1CB;
+  }
+
+  .filter-bar {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .filter-label { font-size: 11px; color: #5F5E5A; margin-right: 4px; }
+  .filter-bar select { height: 30px; padding: 0 26px 0 10px; font-size: 12px; }
+  .filter-bar input { height: 30px; padding: 0 10px; font-size: 12px; width: 200px; }
+  .filter-divider { width: 1px; height: 18px; background: rgba(0,0,0,0.1); margin: 0 4px; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .kpi-label {
+    font-size: 11px; color: #5F5E5A; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .kpi-value-row {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .kpi-value {
+    font-size: 22px; font-weight: 500; letter-spacing: -0.4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-target {
+    font-size: 11px; color: #888780;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-progress {
+    margin-top: 8px; height: 6px;
+    background: #ECEAE0; border-radius: 3px; overflow: hidden;
+  }
+  .kpi-progress-fill { height: 100%; border-radius: 3px; }
+  .kpi-meta {
+    margin-top: 6px; display: flex; justify-content: space-between;
+    font-size: 11px;
+  }
+  .achievement { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .ach-good { color: #0F6E56; }
+  .ach-warn { color: #854F0B; }
+  .ach-bad { color: #993C1D; }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .chart-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .chart-title { font-size: 13px; font-weight: 500; }
+  .chart-actions { display: flex; gap: 4px; font-size: 11px; color: #888780; }
+  .chart-actions a { color: #185FA5; text-decoration: none; cursor: pointer; }
+  .chart-actions a:hover { text-decoration: underline; }
+  .chart-wrap { position: relative; width: 100%; height: 240px; }
+
+  .table-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .table-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.08);
+  }
+  .table-title-row { display: flex; align-items: center; gap: 10px; }
+  .table-title { font-size: 14px; font-weight: 500; }
+  .table-pill {
+    font-size: 10px; color: #5F5E5A;
+    padding: 2px 8px; background: #ECEAE0; border-radius: 8px;
+  }
+  .view-tabs { display: flex; gap: 0; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 6px; overflow: hidden; }
+  .view-tab { padding: 5px 12px; font-size: 11px; background: #fff; cursor: pointer; border: none; border-right: 0.5px solid rgba(0,0,0,0.12); height: 28px; }
+  .view-tab:last-child { border-right: none; }
+  .view-tab.active { background: #1F1E1B; color: #fff; }
+
+  .table-wrap { overflow-x: auto; }
+  table.excel {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    min-width: 1100px;
+  }
+  table.excel thead th {
+    padding: 7px 10px;
+    background: #ECEAE0;
+    color: #444441;
+    border-right: 0.5px solid #C8C5BB;
+    border-bottom: 1px solid #888780;
+    font-weight: 500;
+    font-size: 11px;
+    text-align: left;
+    white-space: nowrap;
+    position: sticky; top: 0; z-index: 1;
+  }
+  table.excel thead th.num { text-align: right; }
+  table.excel thead th.center { text-align: center; }
+  table.excel thead .group-header {
+    background: #DDD9CB;
+    text-align: center;
+    border-bottom: 0.5px solid #B4B2A9;
+  }
+  table.excel thead th:last-child { border-right: none; }
+  table.excel tbody td {
+    padding: 5px 10px;
+    border-right: 0.5px solid rgba(0,0,0,0.05);
+    border-bottom: 0.5px solid rgba(0,0,0,0.05);
+    white-space: nowrap;
+  }
+  table.excel tbody td:last-child { border-right: none; }
+  table.excel tbody td.num { text-align: right; }
+  table.excel tbody td.center { text-align: center; }
+
+  tr.group-row {
+    background: #F1EFE8;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  tr.group-row td {
+    padding: 7px 10px !important;
+    border-top: 0.5px solid #B4B2A9;
+    border-bottom: 0.5px solid #B4B2A9 !important;
+    background: #F1EFE8;
+  }
+  tr.group-row:hover td { background: #EAE7DA; }
+  .group-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #1F1E1B;
+  }
+  .group-toggle i { font-size: 14px; transition: transform 0.15s; }
+  tr.group-row.collapsed .group-toggle i { transform: rotate(-90deg); }
+  .group-name { font-weight: 500; font-size: 13px; }
+  .group-stat {
+    font-size: 11px; color: #5F5E5A; font-weight: 400;
+    margin-left: 8px;
+  }
+
+  tr.detail-row td { background: #fff; }
+  tr.detail-row:nth-of-type(even) td { background: #FAFAF7; }
+  tr.detail-row:hover td { background: #FFF8E8; }
+  .row-num {
+    color: #888780;
+    width: 32px;
+    text-align: center !important;
+  }
+  .tantou-pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .t-miyauchi { background: #E6F1FB; color: #0C447C; }
+  .t-matsue { background: #E1F5EE; color: #085041; }
+  .t-ito { background: #FAEEDA; color: #633806; }
+  .t-yoshida { background: #EEEDFE; color: #3C3489; }
+  .t-fujiyoshi { background: #FBEAF0; color: #72243E; }
+
+  .heat-good { background: #E1F5EE !important; color: #0F6E56; font-weight: 500; }
+  .heat-warn { background: #FAEEDA !important; color: #854F0B; font-weight: 500; }
+  .heat-bad { background: #FCEBEB !important; color: #A32D2D; font-weight: 500; }
+  .heat-zero { color: #B4B2A9; }
+
+  .delta-up { color: #0F6E56; }
+  .delta-down { color: #993C1D; }
+
+  tr.totals-row td {
+    background: #2C2C2A !important;
+    color: #fff;
+    font-weight: 500;
+    border-top: 1.5px solid #1F1E1B;
+    padding: 9px 10px !important;
+  }
+  tr.totals-row td.heat-good { background: #2C2C2A !important; color: #5DCAA5; }
+  tr.totals-row td.heat-bad { background: #2C2C2A !important; color: #F09595; }
+  tr.totals-row td.heat-warn { background: #2C2C2A !important; color: #F0C77B; }
+
+  .table-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+    font-size: 11px; color: #888780;
+  }
+  .footer-links { display: flex; gap: 16px; }
+  .footer-links a { color: #185FA5; text-decoration: none; cursor: pointer; }
+  .footer-links a:hover { text-decoration: underline; }
+
+  .quick-actions {
+    margin-top: 16px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .qa-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .qa-card:hover {
+    border-color: #378ADD;
+    transform: translateY(-1px);
+  }
+  .qa-card-icon {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: #E6F1FB; color: #185FA5;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; margin-bottom: 8px;
+  }
+  .qa-card-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .qa-card-desc { font-size: 11px; color: #5F5E5A; }
+
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .quick-actions { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">SF</div>
+      <div>
+        <div class="sidebar-brand-name">SalesField</div>
+        <div class="sidebar-brand-sub">営業実績管理</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">レポート</div>
+    <a class="nav-item active"><i class="ti ti-calendar-stats"></i>日次集計</a>
+    <a class="nav-item"><i class="ti ti-chart-bar"></i>月次集計</a>
+    <a class="nav-item"><i class="ti ti-building-store"></i>取引先別<span class="nav-badge">13</span></a>
+    <a class="nav-item"><i class="ti ti-users"></i>担当者別</a>
+    <a class="nav-item"><i class="ti ti-map-pin"></i>営業所別</a>
+
+    <div class="sidebar-section">マスタ</div>
+    <a class="nav-item"><i class="ti ti-target"></i>目標設定</a>
+    <a class="nav-item"><i class="ti ti-list-check"></i>取引先マスタ</a>
+    <a class="nav-item"><i class="ti ti-id-badge"></i>担当者マスタ</a>
+
+    <div class="sidebar-section">取込</div>
+    <a class="nav-item"><i class="ti ti-file-spreadsheet"></i>Excel取込</a>
+    <a class="nav-item"><i class="ti ti-history"></i>取込履歴</a>
+
+    <div class="sidebar-section">その他</div>
+    <a class="nav-item"><i class="ti ti-settings"></i>設定</a>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="breadcrumb">
+        <i class="ti ti-home"></i>
+        <span>レポート</span>
+        <i class="ti ti-chevron-right"></i>
+        <span class="current">日次集計</span>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-only" title="通知"><i class="ti ti-bell"></i></button>
+        <button class="icon-only" title="ヘルプ"><i class="ti ti-help"></i></button>
+        <div class="user-pill">
+          <div class="user-avatar">YT</div>
+          <span>山田 太郎</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">日次集計</h1>
+          <div class="page-sub">2026年4月17日 (金) 時点 - 月次目標までの進捗を確認</div>
+        </div>
+        <div class="page-actions">
+          <button><i class="ti ti-chevron-left"></i></button>
+          <input type="date" value="2026-04-17" style="width: 145px;">
+          <button><i class="ti ti-chevron-right"></i></button>
+          <div style="width: 8px;"></div>
+          <button><i class="ti ti-refresh"></i> 更新</button>
+          <button><i class="ti ti-download"></i> Excel出力</button>
+          <button class="primary"><i class="ti ti-share"></i> 共有</button>
+        </div>
+      </div>
+
+      <div class="import-banner">
+        <i class="ti ti-file-check file-icon"></i>
+        <div>
+          <span class="file-name">日次実績_20260417.xlsx</span>
+          を取込済み (555店舗、4営業所、17担当者)
+        </div>
+        <span class="file-meta"><i class="ti ti-clock" style="vertical-align: -2px;"></i> 14:32 取込</span>
+        <button><i class="ti ti-eye"></i> 取込内容を見る</button>
+        <button><i class="ti ti-upload"></i> 再取込</button>
+      </div>
+
+      <div class="filter-bar">
+        <span class="filter-label">営業所</span>
+        <select>
+          <option>越谷</option>
+          <option>川越</option>
+          <option>熊谷</option>
+          <option>大宮</option>
+          <option>全営業所</option>
+        </select>
+        <div class="filter-divider"></div>
+        <span class="filter-label">担当者</span>
+        <select>
+          <option>全員 (5名)</option>
+          <option>宮内</option>
+          <option>松江</option>
+          <option>伊藤</option>
+          <option>吉田</option>
+          <option>藤吉</option>
+        </select>
+        <span class="filter-label">取引先</span>
+        <select>
+          <option>全取引先 (13)</option>
+          <option>埼玉スバル</option>
+          <option>埼玉日産</option>
+          <option>その他トヨタ</option>
+        </select>
+        <div class="filter-divider"></div>
+        <input type="text" placeholder="店舗名で検索...">
+        <div style="margin-left: auto;"></div>
+        <button class="icon-only" title="フィルタ条件を保存"><i class="ti ti-bookmark"></i></button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label"><i class="ti ti-clipboard-list"></i> 受注件数 (単月)</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">61</span>
+            <span class="kpi-target">/ 目標 83 件</span>
+          </div>
+          <div class="kpi-progress">
+            <div class="kpi-progress-fill" style="width: 73%; background: #BA7517;"></div>
+          </div>
+          <div class="kpi-meta">
+            <span style="color: #5F5E5A;">既存 58 / 新規 3</span>
+            <span class="achievement ach-warn">73.5%</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label"><i class="ti ti-currency-yen"></i> 売上金額 (単月)</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">¥4.83M</span>
+            <span class="kpi-target">/ 目標 ¥7.20M</span>
+          </div>
+          <div class="kpi-progress">
+            <div class="kpi-progress-fill" style="width: 67%; background: #BA7517;"></div>
+          </div>
+          <div class="kpi-meta">
+            <span style="color: #5F5E5A;">残り ¥2.36M (13日)</span>
+            <span class="achievement ach-warn">67.2%</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label"><i class="ti ti-trending-up"></i> 日次平均売上</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">¥284K</span>
+            <span class="kpi-target">/ 必要 ¥182K</span>
+          </div>
+          <div class="kpi-progress">
+            <div class="kpi-progress-fill" style="width: 100%; background: #1D9E75;"></div>
+          </div>
+          <div class="kpi-meta">
+            <span style="color: #5F5E5A;">17日経過</span>
+            <span class="achievement ach-good">ペース達成</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label"><i class="ti ti-arrows-exchange"></i> 前期比 (売上)</div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">+2.1%</span>
+            <span class="kpi-target">前期 ¥4.73M</span>
+          </div>
+          <div class="kpi-progress">
+            <div class="kpi-progress-fill" style="width: 51%; background: #1D9E75;"></div>
+          </div>
+          <div class="kpi-meta">
+            <span style="color: #5F5E5A;">+¥101K</span>
+            <span class="achievement ach-good"><i class="ti ti-arrow-up-right" style="font-size: 11px;"></i> 増加</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">取引先別 売上実績</span>
+            <div class="chart-actions">
+              <a>詳細レポート →</a>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="torihikiChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">担当者別 達成率</span>
+            <div class="chart-actions">
+              <a>担当者レポート →</a>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="tantouChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title-row">
+            <span class="table-title">取引先 × 店舗 集計</span>
+            <span class="table-pill">越谷営業所 / 145 店舗</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="view-tabs">
+              <button class="view-tab active">取引先別</button>
+              <button class="view-tab">担当者別</button>
+              <button class="view-tab">店舗一覧</button>
+            </div>
+            <button class="icon-only" title="列の表示設定"><i class="ti ti-columns-3"></i></button>
+            <button class="icon-only" title="ピボット"><i class="ti ti-table-options"></i></button>
+            <button class="icon-only" title="コピー"><i class="ti ti-copy"></i></button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="excel">
+            <thead>
+              <tr>
+                <th rowspan="2" style="width: 32px;" class="center">#</th>
+                <th rowspan="2" style="width: 200px;">取引先 / 店舗</th>
+                <th rowspan="2" style="width: 70px;" class="center">担当者</th>
+                <th colspan="3" class="group-header">受注件数 (単月)</th>
+                <th colspan="3" class="group-header">売上金額 (単月)</th>
+                <th rowspan="2" class="num" style="width: 90px;">累計売上</th>
+                <th rowspan="2" class="num" style="width: 90px;">前期売上</th>
+              </tr>
+              <tr>
+                <th class="num" style="width: 60px;">目標</th>
+                <th class="num" style="width: 60px;">実績</th>
+                <th class="num" style="width: 70px;">達成率</th>
+                <th class="num" style="width: 90px;">目標</th>
+                <th class="num" style="width: 90px;">実績</th>
+                <th class="num" style="width: 70px;">達成率</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr class="group-row" data-group="subaru">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">埼玉スバル</span><span class="group-stat">6 店舗</span></td>
+                <td class="num">9</td>
+                <td class="num">9</td>
+                <td class="num heat-good">100.0%</td>
+                <td class="num">1,750,000</td>
+                <td class="num">1,201,819</td>
+                <td class="num heat-warn">68.7%</td>
+                <td class="num">1,201,819</td>
+                <td class="num">8,003,500</td>
+              </tr>
+              <tr class="detail-row" data-group="subaru"><td class="row-num">1</td><td>　浦和</td><td class="center"><span class="tantou-pill t-miyauchi">宮内</span></td><td class="num">2</td><td class="num">2</td><td class="num heat-good">100%</td><td class="num">2</td><td class="num">210,000</td><td class="num heat-good">100%</td><td class="num">210,000</td><td class="num">36,364</td></tr>
+              <tr class="detail-row" data-group="subaru"><td class="row-num">2</td><td>　越谷</td><td class="center"><span class="tantou-pill t-matsue">松江</span></td><td class="num">2</td><td class="num">2</td><td class="num heat-good">100%</td><td class="num">2</td><td class="num">288,182</td><td class="num heat-good">137%</td><td class="num">288,182</td><td class="num">3,543,955</td></tr>
+              <tr class="detail-row" data-group="subaru"><td class="row-num">3</td><td>　三郷</td><td class="center"><span class="tantou-pill t-ito">伊藤</span></td><td class="num">1</td><td class="num">1</td><td class="num heat-good">100%</td><td class="num">1</td><td class="num">110,000</td><td class="num heat-good">100%</td><td class="num">110,000</td><td class="num">1,310,000</td></tr>
+              <tr class="detail-row" data-group="subaru"><td class="row-num">4</td><td>　春日部</td><td class="center"><span class="tantou-pill t-yoshida">吉田</span></td><td class="num">2</td><td class="num">2</td><td class="num heat-good">100%</td><td class="num">2</td><td class="num">383,637</td><td class="num heat-good">349%</td><td class="num">383,637</td><td class="num">1,841,818</td></tr>
+              <tr class="detail-row" data-group="subaru"><td class="row-num">5</td><td>　川口</td><td class="center"><span class="tantou-pill t-miyauchi">宮内</span></td><td class="num">2</td><td class="num">2</td><td class="num heat-good">100%</td><td class="num">2</td><td class="num">210,000</td><td class="num heat-good">100%</td><td class="num">210,000</td><td class="num">610,000</td></tr>
+              <tr class="detail-row" data-group="subaru"><td class="row-num">6</td><td>　川口栄町</td><td class="center"><span class="tantou-pill t-miyauchi">宮内</span></td><td class="num heat-zero">0</td><td class="num heat-zero">0</td><td class="num heat-zero">-</td><td class="num">0</td><td class="num heat-zero">0</td><td class="num heat-zero">-</td><td class="num heat-zero">0</td><td class="num">315,000</td></tr>
+
+              <tr class="group-row" data-group="nissan">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">埼玉日産</span><span class="group-stat">8 店舗</span></td>
+                <td class="num">12</td>
+                <td class="num">5</td>
+                <td class="num heat-bad">41.7%</td>
+                <td class="num">1,420,000</td>
+                <td class="num">965,000</td>
+                <td class="num heat-warn">68.0%</td>
+                <td class="num">965,000</td>
+                <td class="num">9,610,403</td>
+              </tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">1</td><td>　越谷</td><td class="center"><span class="tantou-pill t-yoshida">吉田</span></td><td class="num">2</td><td class="num heat-zero">0</td><td class="num heat-bad">0%</td><td class="num">200,000</td><td class="num heat-zero">0</td><td class="num heat-bad">0%</td><td class="num heat-zero">0</td><td class="num">377,272</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">2</td><td>　蒲生</td><td class="center"><span class="tantou-pill t-matsue">松江</span></td><td class="num">2</td><td class="num">1</td><td class="num heat-warn">50%</td><td class="num">200,000</td><td class="num">136,364</td><td class="num heat-warn">68%</td><td class="num">136,364</td><td class="num">2,799,998</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">3</td><td>　戸田</td><td class="center"><span class="tantou-pill t-fujiyoshi">藤吉</span></td><td class="num">2</td><td class="num heat-zero">0</td><td class="num heat-bad">0%</td><td class="num">200,000</td><td class="num">143,182</td><td class="num heat-warn">72%</td><td class="num">143,182</td><td class="num">698,452</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">4</td><td>　春日部</td><td class="center"><span class="tantou-pill t-yoshida">吉田</span></td><td class="num">2</td><td class="num">1</td><td class="num heat-warn">50%</td><td class="num">220,000</td><td class="num">40,909</td><td class="num heat-bad">19%</td><td class="num">40,909</td><td class="num">1,389,274</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">5</td><td>　川口</td><td class="center"><span class="tantou-pill t-ito">伊藤</span></td><td class="num">2</td><td class="num">2</td><td class="num heat-good">100%</td><td class="num">200,000</td><td class="num">131,818</td><td class="num heat-warn">66%</td><td class="num">131,818</td><td class="num">3,230,406</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">6</td><td>　川口栄町</td><td class="center"><span class="tantou-pill t-matsue">松江</span></td><td class="num">1</td><td class="num">1</td><td class="num heat-good">100%</td><td class="num">200,000</td><td class="num">272,727</td><td class="num heat-good">136%</td><td class="num">272,727</td><td class="num">445,454</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">7</td><td>　草加</td><td class="center"><span class="tantou-pill t-ito">伊藤</span></td><td class="num">1</td><td class="num heat-zero">0</td><td class="num heat-bad">0%</td><td class="num">200,000</td><td class="num heat-zero">0</td><td class="num heat-bad">0%</td><td class="num heat-zero">0</td><td class="num">512,727</td></tr>
+              <tr class="detail-row" data-group="nissan"><td class="row-num">8</td><td>　草加ｲﾝﾀｰ店</td><td class="center"><span class="tantou-pill t-matsue">松江</span></td><td class="num">0</td><td class="num heat-zero">0</td><td class="num heat-zero">-</td><td class="num">0</td><td class="num">240,000</td><td class="num heat-good">-</td><td class="num">240,000</td><td class="num">534,092</td></tr>
+
+              <tr class="group-row collapsed" data-group="toyota">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">その他トヨタ</span><span class="group-stat">31 店舗</span></td>
+                <td class="num">15</td>
+                <td class="num">13</td>
+                <td class="num heat-warn">86.7%</td>
+                <td class="num">1,250,000</td>
+                <td class="num">853,818</td>
+                <td class="num heat-warn">68.3%</td>
+                <td class="num">853,818</td>
+                <td class="num">14,852,400</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="repair">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">修理工場・代理店</span><span class="group-stat">57 店舗</span></td>
+                <td class="num">10</td>
+                <td class="num">8</td>
+                <td class="num heat-warn">80.0%</td>
+                <td class="num">1,150,000</td>
+                <td class="num">786,364</td>
+                <td class="num heat-warn">68.4%</td>
+                <td class="num">786,364</td>
+                <td class="num">12,407,455</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="other-sales">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">その他販売店</span><span class="group-stat">4 店舗</span></td>
+                <td class="num">3</td>
+                <td class="num">1</td>
+                <td class="num heat-bad">33.3%</td>
+                <td class="num">450,000</td>
+                <td class="num">319,091</td>
+                <td class="num heat-warn">70.9%</td>
+                <td class="num">319,091</td>
+                <td class="num">3,967,286</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="corolla">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">カローラ新埼玉</span><span class="group-stat">2 店舗</span></td>
+                <td class="num">3</td>
+                <td class="num">2</td>
+                <td class="num heat-warn">66.7%</td>
+                <td class="num">420,000</td>
+                <td class="num">291,364</td>
+                <td class="num heat-warn">69.4%</td>
+                <td class="num">291,364</td>
+                <td class="num">821,546</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="prince">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">日産プリンス</span><span class="group-stat">11 店舗</span></td>
+                <td class="num">20</td>
+                <td class="num">17</td>
+                <td class="num heat-warn">85.0%</td>
+                <td class="num">420,000</td>
+                <td class="num">289,091</td>
+                <td class="num heat-warn">68.8%</td>
+                <td class="num">289,091</td>
+                <td class="num">12,079,548</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="suzuki1">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">スズキ自販関東</span><span class="group-stat">1 店舗</span></td>
+                <td class="num">1</td>
+                <td class="num heat-zero">0</td>
+                <td class="num heat-bad">0%</td>
+                <td class="num">150,000</td>
+                <td class="num">100,000</td>
+                <td class="num heat-warn">66.7%</td>
+                <td class="num">100,000</td>
+                <td class="num">104,545</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="mazda">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">関東マツダ</span><span class="group-stat">5 店舗</span></td>
+                <td class="num">2</td>
+                <td class="num heat-zero">0</td>
+                <td class="num heat-bad">0%</td>
+                <td class="num">30,000</td>
+                <td class="num">18,636</td>
+                <td class="num heat-warn">62.1%</td>
+                <td class="num">18,636</td>
+                <td class="num">3,000,025</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="suzuki2">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">スズキ自販埼玉</span><span class="group-stat">6 店舗</span></td>
+                <td class="num">3</td>
+                <td class="num">2</td>
+                <td class="num heat-warn">66.7%</td>
+                <td class="num">20,000</td>
+                <td class="num">9,091</td>
+                <td class="num heat-warn">45.5%</td>
+                <td class="num">9,091</td>
+                <td class="num">4,266,728</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="honda">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">その他ホンダ</span><span class="group-stat">16 店舗</span></td>
+                <td class="num">5</td>
+                <td class="num">3</td>
+                <td class="num heat-warn">60.0%</td>
+                <td class="num">50,000</td>
+                <td class="num heat-zero">0</td>
+                <td class="num heat-bad">0.0%</td>
+                <td class="num heat-zero">0</td>
+                <td class="num">4,317,000</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="daihatsu">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">埼玉ダイハツ</span><span class="group-stat">8 店舗</span></td>
+                <td class="num">2</td>
+                <td class="num">1</td>
+                <td class="num heat-warn">50.0%</td>
+                <td class="num">37,000</td>
+                <td class="num heat-zero">0</td>
+                <td class="num heat-bad">0.0%</td>
+                <td class="num heat-zero">0</td>
+                <td class="num">2,891,191</td>
+              </tr>
+
+              <tr class="group-row collapsed" data-group="mitsubishi">
+                <td class="center"><span class="group-toggle"><i class="ti ti-chevron-down"></i></span></td>
+                <td colspan="2"><span class="group-name">三菱</span><span class="group-stat">1 店舗</span></td>
+                <td class="num">1</td>
+                <td class="num heat-zero">0</td>
+                <td class="num heat-bad">0%</td>
+                <td class="num">100,000</td>
+                <td class="num heat-zero">0</td>
+                <td class="num heat-bad">0%</td>
+                <td class="num heat-zero">0</td>
+                <td class="num">985,911</td>
+              </tr>
+
+              <tr class="totals-row">
+                <td class="center"></td>
+                <td colspan="2"><strong>合計 (越谷)</strong></td>
+                <td class="num">83</td>
+                <td class="num">61</td>
+                <td class="num heat-warn">73.5%</td>
+                <td class="num">7,197,000</td>
+                <td class="num">4,834,274</td>
+                <td class="num heat-warn">67.2%</td>
+                <td class="num">4,834,274</td>
+                <td class="num">73,503,128</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span><strong>13 取引先</strong> / 145 店舗 を表示中</span>
+          <div class="footer-links">
+            <a><i class="ti ti-pin"></i> 店舗をピン留め</a>
+            <a><i class="ti ti-bell"></i> アラート設定</a>
+            <a><i class="ti ti-arrow-up-right"></i> 詳細ビューを開く</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <div class="qa-card">
+          <div class="qa-card-icon"><i class="ti ti-trending-down"></i></div>
+          <div class="qa-card-title">未達成の店舗を確認 (32件)</div>
+          <div class="qa-card-desc">達成率50%以下の店舗一覧と要因分析</div>
+        </div>
+        <div class="qa-card">
+          <div class="qa-card-icon"><i class="ti ti-mail"></i></div>
+          <div class="qa-card-title">日報を作成して送信</div>
+          <div class="qa-card-desc">本日の集計結果からテンプレート生成</div>
+        </div>
+        <div class="qa-card">
+          <div class="qa-card-icon"><i class="ti ti-calendar-event"></i></div>
+          <div class="qa-card-title">月次サマリを作成</div>
+          <div class="qa-card-desc">4月分のレポートを生成 (残り13日)</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('torihikiChart'), {
+  type: 'bar',
+  data: {
+    labels: ['埼玉スバル','埼玉日産','その他トヨタ','修理工場・代理店','その他販売店','カローラ新埼玉','日産プリンス','その他5社'],
+    datasets: [
+      { label: '実績', data: [1201819, 965000, 853818, 786364, 319091, 291364, 289091, 127727], backgroundColor: '#378ADD', borderRadius: 2, barPercentage: 0.8 },
+      { label: '目標', data: [1750000, 1420000, 1250000, 1150000, 450000, 420000, 420000, 337000], backgroundColor: 'rgba(180,178,169,0.4)', borderRadius: 2, barPercentage: 0.8 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, boxHeight: 10 } },
+      tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ¥${c.parsed.x.toLocaleString()}` } }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 }, callback: (v) => '¥' + (v/1e6).toFixed(1) + 'M' } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+new Chart(document.getElementById('tantouChart'), {
+  type: 'bar',
+  data: {
+    labels: ['松江','伊藤','藤吉','吉田','宮内'],
+    datasets: [
+      { label: '達成率', data: [68.3, 67.5, 67.4, 66.4, 65.0], backgroundColor: ['#1D9E75','#1D9E75','#BA7517','#BA7517','#BA7517'], borderRadius: 2, barPercentage: 0.6 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (c) => `達成率 ${c.parsed.x}%`,
+          afterLabel: (c) => {
+            const data = [
+              ['実績 ¥1,297,909', '目標 ¥1,900,000'],
+              ['実績 ¥1,180,454', '目標 ¥1,750,000'],
+              ['実績 ¥1,038,638', '目標 ¥1,540,000'],
+              ['実績 ¥797,273', '目標 ¥1,200,000'],
+              ['実績 ¥520,000', '目標 ¥800,000']
+            ];
+            return data[c.dataIndex];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 100,
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { font: { size: 10 }, callback: (v) => v + '%' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+document.querySelectorAll('tr.group-row').forEach(row => {
+  row.addEventListener('click', () => {
+    row.classList.toggle('collapsed');
+    const group = row.dataset.group;
+    document.querySelectorAll(`tr.detail-row[data-group="${group}"]`).forEach(d => {
+      d.style.display = row.classList.contains('collapsed') ? 'none' : '';
+    });
+  });
+});
+
+document.querySelectorAll('tr.group-row.collapsed').forEach(row => {
+  const group = row.dataset.group;
+  document.querySelectorAll(`tr.detail-row[data-group="${group}"]`).forEach(d => {
+    d.style.display = 'none';
+  });
+});
+
+document.querySelectorAll('.view-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
