@@ -2,6 +2,7 @@
 
 > このファイルは Claude Code がプロジェクトを正しく理解するための要約。
 > 詳細は [`docs/project-context.md`](docs/project-context.md) を参照。
+> 運用フロー (要望→要件定義→実装) は [`docs/workflow.md`](docs/workflow.md) を参照。
 
 ---
 

@@ -1,0 +1,125 @@
+name: 要件定義 (Requirement Spec)
+description: 要望を実装可能な単位に落とし込むための仕様 Issue。スコープと受け入れ基準を明確化。
+title: "[要件] "
+labels: ["type:要件定義", "stage:2-要件定義中"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 使い方
+        - 元になる要望 Issue があれば `Closes #xx` / `Refs #xx` で必ず紐付け。
+        - この Issue が **設計・実装の入り口**。Claude Code への指示はここから派生させます。
+
+  - type: input
+    id: related-request
+    attributes:
+      label: 関連する要望 Issue
+      description: 「Refs #12」 のように番号を書く。新規発案なら「なし」。
+      placeholder: "Refs #"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要 (1〜2行)
+      description: この要件で何を実現するか。
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: スコープ (今回やること)
+      description: 箇条書きで列挙。粒度は「画面」「機能」「データ変更」の単位。
+      placeholder: |
+        - /reports/monthly ページの新設
+        - 営業所別 月次 PDF 出力ボタン
+        - sf_sales_v_office_monthly_summary ビューの追加
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: 非スコープ (今回やらないこと)
+      description: 後回しにすることを明示。後の Phase 行きはここに書く。
+      placeholder: |
+        - 取引先別 月次 PDF (次回)
+        - 月次目標の編集UI
+    validations:
+      required: false
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: ユーザーストーリー
+      description: 「誰が・何のために・何をする」形式で列挙。
+      placeholder: |
+        - 営業所長として、月次サマリーをPDFでダウンロードしたい。なぜなら本部報告に使うため。
+    validations:
+      required: true
+
+  - type: textarea
+    id: ui-requirements
+    attributes:
+      label: 画面・UI 要件
+      description: 必要な画面、フィルタ、表示項目、操作。モック画像があれば貼る。
+    validations:
+      required: false
+
+  - type: textarea
+    id: data-requirements
+    attributes:
+      label: データ・スキーマ要件
+      description: 必要なテーブル/ビュー/カラム/RLS。新規なら必ず `sf_`/`inv_`/`crm_` 等の接頭辞を付ける。
+      placeholder: |
+        - sf_sales_v_office_monthly_summary (ビュー新設)
+          - office_id, ym, sales_amount, sales_target, achievement_rate
+        - RLS: 認証済みユーザーは全営業所参照可
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ基準
+      description: 「これが満たされれば完了」というチェックリスト。
+      value: |
+        - [ ]
+        - [ ]
+        - [ ] 動作確認: ローカル `npm run dev` で /reports/monthly にアクセスし、対象操作が完了する
+        - [ ] `npm run typecheck` が通る
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: 想定リスク・確認事項
+      description: 不確実な点、副社長確認が必要な点、後で揉めそうな点。
+    validations:
+      required: false
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: 対応 Phase
+      options:
+        - Phase 1 (日次集計WEB化)
+        - Phase 2 (PartnerConnect)
+        - Phase 3 (営業日報)
+        - Phase 4 (AIロープレ・全般)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      options:
+        - 高 (リリースブロッカー)
+        - 中 (リリース望ましい)
+        - 低 (後でいい)
+    validations:
+      required: true

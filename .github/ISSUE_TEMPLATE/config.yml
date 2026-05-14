@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 質問・相談 (まずはここで気軽に)
+    url: https://github.com/r-tajima01/mobickhub/discussions
+    about: 要望未満の相談、設計の壁打ち、Phase をまたぐ議論など。Issue にする前のたたき台。

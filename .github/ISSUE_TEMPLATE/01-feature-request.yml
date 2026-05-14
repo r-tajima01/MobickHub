@@ -1,0 +1,65 @@
+name: 要望 (Feature Request)
+description: 副社長・営業所・現場から上がってきた「やりたいこと」の初期受付。要件未確定でOK。
+title: "[要望] "
+labels: ["type:要望", "stage:1-受付"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 使い方
+        - 要望は **未整理のままで構いません**。後で「要件定義」Issue に発展させます。
+        - 関係する Phase が決まっていれば該当マイルストーンに紐付けてください。
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景・きっかけ
+      description: いつ・誰から・どんな文脈で出た話か。雑談ベースでもOK。
+      placeholder: |
+        例) 2026/05/10 副社長定例で、「営業所別の月次サマリーをPDFでも出したい」と発言あり。
+    validations:
+      required: true
+
+  - type: textarea
+    id: who-what
+    attributes:
+      label: 誰のどんな困りごとか
+      description: ユーザー(役職/部署)、現状の作業、不便な点
+      placeholder: |
+        - ユーザー: 営業所長、副社長
+        - 現状: 月初に手作業でPDFを作成している
+        - 不便: 月3-4時間かかる、フォーマットが営業所間でバラつく
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する効果・ゴール (任意)
+      description: 「何ができればOK」のイメージ。数値目標があれば歓迎。
+      placeholder: |
+        例) 月次PDFを1クリックで生成。作業時間 3h → 5min。
+    validations:
+      required: false
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: 想定 Phase
+      description: 不明なら未選択でOK。
+      options:
+        - 不明・要相談
+        - Phase 1 (日次集計WEB化)
+        - Phase 2 (PartnerConnect)
+        - Phase 3 (営業日報)
+        - Phase 4 (AIロープレ・全般)
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: その他メモ
+      description: 関連リンク、過去の議論、参考資料、関連 Issue など。
+    validations:
+      required: false
