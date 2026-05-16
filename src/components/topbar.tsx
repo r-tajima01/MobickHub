@@ -2,7 +2,7 @@ import { Bell, HelpCircle, ChevronRight, Home } from "lucide-react";
 import { headers } from "next/headers";
 
 function deriveBreadcrumb(pathname: string): { label: string; current: boolean }[] {
-  const map: Record<string, string> = {
+  const segMap: Record<string, string> = {
     daily: "日次集計",
     monthly: "月次集計",
     partners: "取引先別",
@@ -11,16 +11,38 @@ function deriveBreadcrumb(pathname: string): { label: string; current: boolean }
     targets: "目標設定",
     import: "Excel取込",
     settings: "設定",
+    fleet: "リース・車両",
+    "used-cars": "中古車オークション",
+    reports: "営業日報",
+    quality: "車両品質",
+    calls: "応対品質",
+    "e-rental": "eレンタカー",
+    training: "教育・AI",
+    exec: "経営",
+    portal: "外部ポータル",
+  };
+  const sectionMap: Record<string, string> = {
+    daily: "レポート",
+    monthly: "レポート",
+    partners: "レポート",
+    reps: "レポート",
+    offices: "レポート",
+    targets: "マスタ",
+    import: "取込",
+    settings: "その他",
+    fleet: "リース・車両",
+    "used-cars": "中古車オークション",
+    reports: "現場入力",
+    quality: "現場入力",
+    calls: "現場入力",
+    "e-rental": "現場入力",
+    training: "教育・AI",
+    exec: "経営",
+    portal: "外部ポータル",
   };
   const seg = pathname.split("/").filter(Boolean)[0];
-  const label = map[seg] ?? "ダッシュボード";
-  const section = ["daily", "monthly", "partners", "reps", "offices"].includes(seg)
-    ? "レポート"
-    : seg === "targets" || seg === "partners" || seg === "reps"
-    ? "マスタ"
-    : seg === "import"
-    ? "取込"
-    : "その他";
+  const label = segMap[seg] ?? "ダッシュボード";
+  const section = sectionMap[seg] ?? "その他";
   return [
     { label: section, current: false },
     { label, current: true },
