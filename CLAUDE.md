@@ -2,7 +2,9 @@
 
 > このファイルは Claude Code がプロジェクトを正しく理解するための要約。
 > 詳細は [`docs/project-context.md`](docs/project-context.md) を参照。
+> モジュール構成・URL構造・アクセス制御は [`docs/information-architecture.md`](docs/information-architecture.md) を参照。
 > 運用フロー (要望→要件定義→実装) は [`docs/workflow.md`](docs/workflow.md) を参照。
+> 重要な設計判断は [`docs/decisions/`](docs/decisions/) (ADR-006 以降を参照)。
 
 ---
 
@@ -13,14 +15,17 @@
 
 **現在は Phase 1 (日次集計WEBアプリ化、2026年5月末リリース) を実装中。**
 
-| Phase | 内容 | 期間 |
+| Phase | 含むモジュール | 主な内容 |
 |---|---|---|
-| 1 (現在) | 日次集計WEBアプリ化 (Excel配信置き換え) | 2026年5月末 |
-| 2 | ディーラーダッシュボード PartnerConnect (タブレット携行) | 2026年8月初旬 |
-| 3 | 営業日報・入力系 (音声含む) | 2026年9月〜 |
-| 4 | AIロープレ・MC全般アプリ化 | 2027年〜 |
+| 1 (現在) | `sf` `core` | 日次集計WEBアプリ化 (Excel配信置き換え) |
+| **1B (並走)** | **`acc`** | 勘定奉行データ取り込み + 経営者専用画面 (`/exec/accounting/*`) |
+| 2 | `dp` `flt` `uc` `bi` + `core` 拡張 | PartnerConnect + リース・車両管理 + 中古車オークション + 経営サマリ |
+| 3 | `act` `vq` `cq` `er` | 営業日報・車両品質・応対品質・eレンタカー (現場入力系) |
+| 4 | `tr` + MC全般 (`hr`/`crm` 等) | AIロープレ + 営業以外の業務取り込み |
+| 5+ | `rnt` | レンタカー基幹置き換え (構想) |
 
-詳細は [`docs/project-context.md`](docs/project-context.md) § 3 参照。
+各モジュールの詳細は [`docs/information-architecture.md`](docs/information-architecture.md)、Phase 配分の根拠は [`docs/decisions/ADR-006-module-layout.md`](docs/decisions/ADR-006-module-layout.md) を参照。
+Phase 1〜4 の公式コミットの原典は [`docs/project-context.md`](docs/project-context.md) § 3。
 
 ---
 
@@ -56,7 +61,24 @@ sf_sales_v_rep_daily_summary       ビュー: 担当者別×日付の集計
 
 詳細な型: `src/types/database.types.ts` (Supabase CLI で生成)
 
-将来モジュール: `inv_*` (在庫), `crm_*` (顧客管理) 等を想定。テーブル名プレフィックスで分離。
+### 将来モジュールのテーブル接頭辞
+
+| 接頭辞 | モジュール | 着手Phase |
+|---|---|---|
+| `acc_*` | 経理分析 (勘定奉行データ起点、経営者専用) | 1B 並走 |
+| `dp_*` | PartnerConnect (外部・取引先ディーラー向け) | 2 |
+| `flt_*` | リース・車両管理 (車両/契約/解約/簿価/整備予定) | 2 |
+| `uc_*` | 中古車オークション (USS出品/評価点/AAトラブル対応) | 2 |
+| `bi_*` | 経営サマリ・クロス分析 (KGI集約、経理×営業×車両) | 2 |
+| `act_*` | 営業日報・活動 (訪問記録、テキスト/音声日報) | 3 |
+| `vq_*` | 車両品質チェック (撥水/抗菌施工、検品) | 3 |
+| `cq_*` | 応対品質 (電話/接客ロープレ、コンテスト) | 3 |
+| `er_*` | eレンタカー・損保連携 | 3 |
+| `tr_*` | 教育・AIロープレ (Gemini Live) | 4 |
+| `hr_*` `crm_*` `inv_*` 等 | 人事/顧客/在庫 (将来検討) | 4+ |
+| `core_*` (or 無接頭辞) | 認証・ロール・組織マスタ・共通基盤 | 横断 |
+
+接頭辞ルールと将来モジュールの詳細は [`docs/information-architecture.md`](docs/information-architecture.md) § 2, § 7 を参照。
 
 ---
 
@@ -75,10 +97,12 @@ sf_sales_v_rep_daily_summary       ビュー: 担当者別×日付の集計
 
 ## 未実装
 
-`docs/claude-code-tasks.md` 参照。主な残タスク:
+`docs/claude-code-tasks.md` (タスク詳細) と `docs/information-architecture.md` (全体像) 参照。主な残タスク:
+
 - Phase 1 残: フィルタバー拡張、ヘッダー仕上げ、quick actions、目標設定UI、月次集計、マスタCRUD
 - Phase 1 polish: loading.tsx, error.tsx, RLS 強化
-- Phase 2 着手準備: shadcn/ui, TanStack Table 導入
+- Phase 1B 着手準備: 勘定奉行データのヒアリング (ADR-008 § ヒアリング論点)
+- Phase 2 着手準備: shadcn/ui, TanStack Table 導入、レンタカーシステム担当者ヒアリング、`/exec/*` と `/portal/*` のアクセス層分離 (ADR-007)
 
 ---
 
@@ -99,13 +123,15 @@ sf_sales_v_rep_daily_summary       ビュー: 担当者別×日付の集計
 ## 開発ルール
 
 1. **データ取得は Server Component で。** Client Component は対話だけ
-2. **テーブル名は必ず `sf_sales_` 等のモジュール接頭辞**。他モジュールと混ぜない
+2. **テーブル名は必ず `sf_sales_` 等のモジュール接頭辞**。他モジュールと混ぜない (接頭辞一覧は本ファイル「データモデル」セクション参照)
 3. **スキーマ変更は必ず `supabase/migrations/` にSQL追加**。Supabase 管理画面で直接いじらない
 4. **新規テーブル作成時は必ず RLS を有効化**
 5. **環境変数**: クライアントから読むのは `NEXT_PUBLIC_*` のみ
 6. **大きい機能は計画→レビュー→実装**: 「実装計画をファイル単位・関数単位で書き出して」と頼まれたら、コードを書く前に計画を提示
 7. **コミットメッセージは日本語OK**、形式 `[Phase1] 日次集計テーブルのスキーマ追加`
 8. **新規ブランチ命名**: `feature/<機能名>` / `fix/<内容>` / `chore/<内容>`、`main` への直 push 禁止
+9. **アクセス層**: 内部 `/`, 経営機密 `/exec/*` (executive ロールのみ), 外部 `/portal/*` (別テナント) の3層を物理的に分離。経営機密・外部画面は middleware + RLS の二重防御 (詳細: ADR-007)
+10. **新規モジュール追加時**: `docs/information-architecture.md` のモジュール表とPhaseマトリクスを更新。Phase配分を動かす場合は ADR を新規作成
 
 ---
 
